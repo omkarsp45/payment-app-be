@@ -1,21 +1,15 @@
 require('dotenv').config()
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { User } from './db'
+import { User, Account } from './db'
+import userMiddleware from './middleware'
 
 const app = express();
 app.use(express.json());
 app.use(cors());
-
-async function db() {
-    await mongoose.connect('mongodb+srv://omkarspatil:BqnWhFkTKZGJQYfV@test.xslxo.mongodb.net/payment-app');
-    console.log('connected to db');
-}
-db();
 
 const userSchema = z.object({
     firstname: z.string().optional(),
@@ -35,6 +29,7 @@ app.post('/signup', async function (req, res) {
                     status: false,
                     message: "User already exists",
                 });
+                return;
             }
         } catch (error) {
             res.status(503).json({
@@ -42,6 +37,7 @@ app.post('/signup', async function (req, res) {
                 message: "Something went wrong, try again",
                 error: error
             });
+            return;
         }
 
         try {
@@ -76,11 +72,12 @@ app.post('/signin', async function (req, res) {
         try {
             const { email, password } = user.data;
             const entry = await User.findOne({ email });
-            if (entry) {
+            if (!entry) {
                 res.status(400).json({
                     status: false,
                     message: "User does not exist, please sign up",
                 });
+                return;
             }
             // @ts-ignore
             const hashedPassword = entry.password;
@@ -90,22 +87,21 @@ app.post('/signin', async function (req, res) {
                     status: false,
                     message: "Invalid credentials"
                 });
+                return;
             }
             const generateToken = jwt.sign({
-                firstname: entry?.firstname,
-                lastname: entry?.lastname,
-                email: entry?.email
+                email
             }, process.env.AUTH_KEY as string);
 
             res.status(200).json({
                 status: true,
                 token: generateToken
             });
-        } catch (error) {
+        } catch (err) {
             res.status(503).json({
                 status: false,
                 message: "Server error",
-                error: error
+                error: err
             });
         }
     } else {
@@ -116,6 +112,28 @@ app.post('/signin', async function (req, res) {
         });
     }
 });
+
+app.put('/update', userMiddleware, async function (req, res) {
+    const email = req.body.email;
+    const { firstname, lastname, password } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 8);
+        await User.updateOne({ email }, {
+            firstname,
+            lastname,
+            password: hashedPassword
+        })
+        res.status(200).json({
+            status: true,
+            message: "Updated Details"
+        })
+    } catch (err) {
+        res.status(503).json({
+            status: false,
+            message: "Something went wrong, try again"
+        })
+    }
+})
 
 app.listen(3000, () => {
     console.log("listening on 3000");

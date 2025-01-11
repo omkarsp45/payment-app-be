@@ -14,22 +14,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 require('dotenv').config();
 const express_1 = __importDefault(require("express"));
-const mongoose_1 = __importDefault(require("mongoose"));
 const cors_1 = __importDefault(require("cors"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const zod_1 = require("zod");
 const db_1 = require("./db");
+const middleware_1 = __importDefault(require("./middleware"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
-function db() {
-    return __awaiter(this, void 0, void 0, function* () {
-        yield mongoose_1.default.connect('mongodb+srv://omkarspatil:BqnWhFkTKZGJQYfV@test.xslxo.mongodb.net/payment-app');
-        console.log('connected to db');
-    });
-}
-db();
 const userSchema = zod_1.z.object({
     firstname: zod_1.z.string().optional(),
     lastname: zod_1.z.string().optional(),
@@ -48,6 +41,7 @@ app.post('/signup', function (req, res) {
                         status: false,
                         message: "User already exists",
                     });
+                    return;
                 }
             }
             catch (error) {
@@ -56,6 +50,7 @@ app.post('/signup', function (req, res) {
                     message: "Something went wrong, try again",
                     error: error
                 });
+                return;
             }
             try {
                 const hashedPassword = yield bcrypt_1.default.hash(password, 8);
@@ -92,36 +87,36 @@ app.post('/signin', function (req, res) {
             try {
                 const { email, password } = user.data;
                 const entry = yield db_1.User.findOne({ email });
-                if (entry) {
+                if (!entry) {
                     res.status(400).json({
                         status: false,
                         message: "User does not exist, please sign up",
                     });
+                    return;
                 }
                 // @ts-ignore
                 const hashedPassword = entry.password;
-                const isMatch = bcrypt_1.default.compare(password, hashedPassword);
+                const isMatch = yield bcrypt_1.default.compare(password, hashedPassword);
                 if (!isMatch) {
                     res.status(400).json({
                         status: false,
                         message: "Invalid credentials"
                     });
+                    return;
                 }
                 const generateToken = jsonwebtoken_1.default.sign({
-                    firstname: entry === null || entry === void 0 ? void 0 : entry.firstname,
-                    lastname: entry === null || entry === void 0 ? void 0 : entry.lastname,
-                    email: entry === null || entry === void 0 ? void 0 : entry.email
+                    email
                 }, process.env.AUTH_KEY);
                 res.status(200).json({
                     status: true,
                     token: generateToken
                 });
             }
-            catch (error) {
+            catch (err) {
                 res.status(503).json({
                     status: false,
                     message: "Server error",
-                    error: error
+                    error: err
                 });
             }
         }
@@ -130,6 +125,30 @@ app.post('/signin', function (req, res) {
                 status: false,
                 message: "Invalid input",
                 error: user.error,
+            });
+        }
+    });
+});
+app.put('/update', middleware_1.default, function (req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const email = req.body.email;
+        const { firstname, lastname, password } = req.body;
+        try {
+            const hashedPassword = yield bcrypt_1.default.hash(password, 8);
+            yield db_1.User.updateOne({ email }, {
+                firstname,
+                lastname,
+                password: hashedPassword
+            });
+            res.status(200).json({
+                status: true,
+                message: "Updated Details"
+            });
+        }
+        catch (err) {
+            res.status(503).json({
+                status: false,
+                message: "Something went wrong, try again"
             });
         }
     });
