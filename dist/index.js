@@ -153,6 +153,36 @@ app.put('/update', middleware_1.default, function (req, res) {
         }
     });
 });
+app.get("/bulk", middleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const filter = req.query.filter || "";
+    try {
+        const users = yield db_1.User.find({
+            $or: [{
+                    firstname: {
+                        "$regex": filter
+                    }
+                }, {
+                    lastname: {
+                        "$regex": filter
+                    }
+                }]
+        });
+        res.json({
+            user: users.map(user => ({
+                firstname: user.firstname,
+                lastname: user.lastname,
+                email: user.email,
+                _id: user._id
+            }))
+        });
+    }
+    catch (err) {
+        res.status(503).json({
+            status: false,
+            message: "Something went wrong, try again"
+        });
+    }
+}));
 app.listen(3000, () => {
     console.log("listening on 3000");
 });

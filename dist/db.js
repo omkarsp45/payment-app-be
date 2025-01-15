@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.User = void 0;
+exports.Account = exports.User = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 (() => __awaiter(void 0, void 0, void 0, function* () {
     yield mongoose_1.default.connect('mongodb+srv://omkarspatil:BqnWhFkTKZGJQYfV@test.xslxo.mongodb.net/payment-app');
@@ -24,4 +24,13 @@ const userSchema = new mongoose_1.default.Schema({
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true }
 });
+const accountSchema = new mongoose_1.default.Schema({
+    userId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    balance: { type: Number, required: true }
+});
 exports.User = mongoose_1.default.model("User", userSchema);
+exports.Account = mongoose_1.default.model("Account", accountSchema);
