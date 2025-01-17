@@ -7,9 +7,9 @@ export default function userMiddleware(req: Request, res: Response, next: NextFu
         res.status(401).json({ message: "You have not logged in before" })
     } else {
         const decodedToken = jwt.verify(token, process.env.AUTH_KEY as string) as jwt.JwtPayload;
-        const email = decodedToken.email;
-        if (email) {
-            req.body.email = email;
+        const userId = decodedToken.userId;
+        if (userId) {
+            req.body.userId = userId;
             next();
         } else {
             res.status(401).json({
