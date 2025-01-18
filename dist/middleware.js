@@ -12,9 +12,9 @@ function userMiddleware(req, res, next) {
     }
     else {
         const decodedToken = jsonwebtoken_1.default.verify(token, process.env.AUTH_KEY);
-        const email = decodedToken.email;
-        if (email) {
-            req.body.email = email;
+        const userId = decodedToken.userId;
+        if (userId) {
+            req.body.userId = userId;
             next();
         }
         else {
