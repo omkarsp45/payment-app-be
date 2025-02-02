@@ -137,7 +137,7 @@ router.put('/update', userMiddleware, async function (req, res) {
 })
 
 // share data only if user is logged in
-router.get("/search", userMiddleware, async (req, res) => {
+router.get("/search", async (req, res) => {
     const filter = req.query.filter || "";
     try {
         const users = await User.find({

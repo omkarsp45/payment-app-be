@@ -13,18 +13,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const middleware_1 = __importDefault(require("./middleware"));
 const db_1 = require("./db");
 const mongoose_1 = __importDefault(require("mongoose"));
 const router = express_1.default.Router();
-router.get('/balance', function (req, res) {
+router.get('/balance', middleware_1.default, function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const userId = req.body.userId;
         try {
             const account = yield db_1.Account.findOne({ userId: userId });
+            const user = yield db_1.User.findOne({ _id: userId });
             if (account) {
                 res.status(200).json({
                     status: true,
-                    balance: (account === null || account === void 0 ? void 0 : account.balance) / 100
+                    balance: (account === null || account === void 0 ? void 0 : account.balance) / 100,
+                    firstname: user === null || user === void 0 ? void 0 : user.firstname,
+                    lastname: user === null || user === void 0 ? void 0 : user.lastname
                 });
             }
             else {
@@ -42,7 +46,7 @@ router.get('/balance', function (req, res) {
         }
     });
 });
-router.post('/transfer', function (req, res) {
+router.post('/transfer', middleware_1.default, function (req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const session = yield mongoose_1.default.startSession();
         session.startTransaction();

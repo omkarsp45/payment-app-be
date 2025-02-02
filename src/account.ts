@@ -1,17 +1,21 @@
 import express from 'express';
-import { Account } from './db';
+import userMiddleware from './middleware';
+import { Account, User } from './db';
 import mongoose from 'mongoose';
 
 const router = express.Router();
 
-router.get('/balance', async function (req, res) {
+router.get('/balance', userMiddleware, async function (req, res) {
     const userId = req.body.userId;
     try {
         const account = await Account.findOne({ userId: userId });
+        const user = await User.findOne({ _id: userId });
         if (account) {
             res.status(200).json({
                 status: true,
-                balance: account?.balance / 100
+                balance: account?.balance / 100,
+                firstname: user?.firstname,
+                lastname: user?.lastname
             })
         } else {
             res.status(400).json({
@@ -27,7 +31,7 @@ router.get('/balance', async function (req, res) {
     }
 });
 
-router.post('/transfer', async function (req, res) {
+router.post('/transfer', userMiddleware, async function (req, res) {
     const session = await mongoose.startSession();
     session.startTransaction();
     const { userId, receiverId, amount } = req.body;

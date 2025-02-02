@@ -155,7 +155,7 @@ router.put('/update', middleware_1.default, function (req, res) {
     });
 });
 // share data only if user is logged in
-router.get("/search", middleware_1.default, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/search", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const filter = req.query.filter || "";
     try {
         const users = yield db_1.User.find({
